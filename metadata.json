@@ -1,0 +1,6 @@
+{
+  "name": "CardWise AI",
+  "description": "Credit card portfolio manager and AI-powered real-time purchase benefit optimizer with Cloud Firestore sync.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

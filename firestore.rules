@@ -1,0 +1,208 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened reusable helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidCreditCard(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.issuer is string && data.issuer.size() >= 1 && data.issuer.size() <= 80 &&
+             data.cardName is string && data.cardName.size() >= 1 && data.cardName.size() <= 100 &&
+             data.network is string && data.network in ['VISA', 'MASTERCARD', 'RUPAY', 'AMEX', 'DISCOVER', 'DINERS'] &&
+             data.lastFour is string && data.lastFour.size() == 4 && data.lastFour.matches('^[0-9]{4}$') &&
+             data.creditLimit is number && data.creditLimit >= 0 && data.creditLimit <= 100000000 &&
+             data.statementBalance is number && data.statementBalance >= 0 && data.statementBalance <= 100000000 &&
+             data.billingDay is int && data.billingDay >= 1 && data.billingDay <= 31 &&
+             data.dueDay is int && data.dueDay >= 1 && data.dueDay <= 31 &&
+             data.currencySymbol is string && data.currencySymbol.size() >= 1 && data.currencySymbol.size() <= 5 &&
+             data.cardTheme is string && data.cardTheme in ['OBSIDIAN', 'EMERALD', 'SAPPHIRE', 'GOLD', 'CRIMSON', 'SLATE'] &&
+             data.baseRewardRatePercent is number && data.baseRewardRatePercent >= 0 && data.baseRewardRatePercent <= 50 &&
+             data.rewardType is string && data.rewardType in ['CASHBACK', 'POINTS', 'MILES'] &&
+             data.pointValueInCurrency is number && data.pointValueInCurrency >= 0 && data.pointValueInCurrency <= 100 &&
+             data.aiFetched is bool &&
+             data.aiSummary is string && data.aiSummary.size() <= 1200 &&
+             data.aiLastUpdatedEpochMs is int && data.aiLastUpdatedEpochMs >= 0 &&
+             data.sampleData is bool &&
+             data.rules is list && data.rules.size() <= 30 && (data.rules.size() == 0 || data.rules[0] is map) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidTransaction(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             isValidId(data.cardId) &&
+             data.cardDisplayName is string && data.cardDisplayName.size() >= 1 && data.cardDisplayName.size() <= 140 &&
+             data.cardNetwork is string && data.cardNetwork.size() >= 1 && data.cardNetwork.size() <= 30 &&
+             data.merchantName is string && data.merchantName.size() >= 1 && data.merchantName.size() <= 120 &&
+             data.itemNote is string && data.itemNote.size() <= 300 &&
+             data.category is string && data.category in ['SHOPPING', 'GROCERIES', 'DINING', 'TRAVEL', 'UTILITIES', 'FUEL', 'ENTERTAINMENT', 'ALL'] &&
+             data.paymentMode is string && data.paymentMode in ['ONLINE', 'PORTAL', 'EMI', 'IN_STORE'] &&
+             data.amount is number && data.amount > 0 && data.amount <= 100000000 &&
+             data.currencySymbol is string && data.currencySymbol.size() >= 1 && data.currencySymbol.size() <= 5 &&
+             data.matchedRuleId is string && data.matchedRuleId.size() <= 128 &&
+             data.matchedRuleTitle is string && data.matchedRuleTitle.size() <= 160 &&
+             data.expectedBenefitAmount is number && data.expectedBenefitAmount >= 0 && data.expectedBenefitAmount <= 10000000 &&
+             data.effectiveReturnPercent is number && data.effectiveReturnPercent >= 0 && data.effectiveReturnPercent <= 100 &&
+             data.billingCycleKey is string && data.billingCycleKey.size() >= 4 && data.billingCycleKey.size() <= 20 &&
+             data.sampleData is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidUserMeta(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.sampleSeeded is bool &&
+             data.preferredCurrency is string && data.preferredCurrency.size() >= 1 && data.preferredCurrency.size() <= 5 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    // 1. User's Credit Cards Wallet
+    match /users/{userId}/cards/{cardId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(cardId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(cardId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'issuer', 'cardName', 'network', 'lastFour',
+                         'creditLimit', 'statementBalance', 'billingDay', 'dueDay',
+                         'currencySymbol', 'cardTheme', 'baseRewardRatePercent',
+                         'rewardType', 'pointValueInCurrency', 'aiFetched',
+                         'aiSummary', 'aiLastUpdatedEpochMs', 'sampleData',
+                         'rules', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'issuer', 'cardName', 'network', 'lastFour',
+                         'creditLimit', 'statementBalance', 'billingDay', 'dueDay',
+                         'currencySymbol', 'cardTheme', 'baseRewardRatePercent',
+                         'rewardType', 'pointValueInCurrency', 'aiFetched',
+                         'aiSummary', 'aiLastUpdatedEpochMs', 'sampleData',
+                         'rules', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidCreditCard(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(cardId) &&
+                       isValidCreditCard(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().sampleData == existing().sampleData && (
+                         // Action 1: Full card metadata & rules update
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'issuer', 'cardName', 'network', 'lastFour',
+                           'creditLimit', 'statementBalance', 'billingDay', 'dueDay',
+                           'currencySymbol', 'cardTheme', 'baseRewardRatePercent',
+                           'rewardType', 'pointValueInCurrency', 'aiFetched',
+                           'aiSummary', 'aiLastUpdatedEpochMs', 'rules', 'updatedAt'
+                         ]) ||
+                         // Action 2: AI fetch / manual rules override update
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'baseRewardRatePercent', 'rewardType', 'pointValueInCurrency',
+                           'aiFetched', 'aiSummary', 'aiLastUpdatedEpochMs', 'rules', 'updatedAt'
+                         ]) ||
+                         // Action 3: Balance update when logging a purchase
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'statementBalance', 'updatedAt'
+                         ])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(cardId);
+    }
+
+    // 2. User's Purchase & Benefit Activity Logs
+    match /users/{userId}/transactions/{transactionId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(transactionId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(transactionId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'cardId', 'cardDisplayName', 'cardNetwork',
+                         'merchantName', 'itemNote', 'category', 'paymentMode',
+                         'amount', 'currencySymbol', 'matchedRuleId',
+                         'matchedRuleTitle', 'expectedBenefitAmount',
+                         'effectiveReturnPercent', 'billingCycleKey',
+                         'sampleData', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'cardId', 'cardDisplayName', 'cardNetwork',
+                         'merchantName', 'itemNote', 'category', 'paymentMode',
+                         'amount', 'currencySymbol', 'matchedRuleId',
+                         'matchedRuleTitle', 'expectedBenefitAmount',
+                         'effectiveReturnPercent', 'billingCycleKey',
+                         'sampleData', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidTransaction(incoming(), userId) &&
+                       existsAfter(/databases/$(database)/documents/users/$(userId)/cards/$(incoming().cardId));
+
+      allow update: if isOwner(userId) &&
+                       isValidId(transactionId) &&
+                       isValidTransaction(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().cardId == existing().cardId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().sampleData == existing().sampleData && (
+                         // Action: Edit purchase note / amount
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'merchantName', 'itemNote', 'amount',
+                           'expectedBenefitAmount', 'effectiveReturnPercent', 'updatedAt'
+                         ])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(transactionId);
+    }
+
+    // 3. User Wallet Metadata (onboarding / sample seed tracking)
+    match /users/{userId}/meta/{metaId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(metaId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(metaId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'sampleSeeded', 'preferredCurrency', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'sampleSeeded', 'preferredCurrency', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidUserMeta(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(metaId) &&
+                       isValidUserMeta(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt && (
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'sampleSeeded', 'preferredCurrency', 'updatedAt'
+                         ])
+                       );
+
+      allow delete: if isOwner(userId) && isValidId(metaId);
+    }
+  }
+}

@@ -1,0 +1,276 @@
+{
+  "entities": {
+    "CreditCard": {
+      "title": "CreditCard",
+      "description": "A user's credit card with non-sensitive metadata (last 4 digits only) and structured benefit/offer rules.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID of the card owner."
+        },
+        "issuer": {
+          "type": "string",
+          "description": "Issuing bank or institution name."
+        },
+        "cardName": {
+          "type": "string",
+          "description": "Card variant or product name."
+        },
+        "network": {
+          "type": "string",
+          "enum": ["VISA", "MASTERCARD", "RUPAY", "AMEX", "DISCOVER", "DINERS"],
+          "description": "Card payment network."
+        },
+        "lastFour": {
+          "type": "string",
+          "description": "Last 4 digits of the card only (never full card number, CVV, or PIN)."
+        },
+        "creditLimit": {
+          "type": "number",
+          "description": "Total credit limit in the card currency."
+        },
+        "statementBalance": {
+          "type": "number",
+          "description": "Current statement or unbilled balance."
+        },
+        "billingDay": {
+          "type": "integer",
+          "description": "Day of month when statement generates (1-31)."
+        },
+        "dueDay": {
+          "type": "integer",
+          "description": "Day of month when payment is due (1-31)."
+        },
+        "currencySymbol": {
+          "type": "string",
+          "description": "Currency symbol such as ₹ or $."
+        },
+        "cardTheme": {
+          "type": "string",
+          "enum": ["OBSIDIAN", "EMERALD", "SAPPHIRE", "GOLD", "CRIMSON", "SLATE"],
+          "description": "Visual metallic card finish theme."
+        },
+        "baseRewardRatePercent": {
+          "type": "number",
+          "description": "Base reward or cashback rate percentage on eligible non-accelerated spends."
+        },
+        "rewardType": {
+          "type": "string",
+          "enum": ["CASHBACK", "POINTS", "MILES"],
+          "description": "Primary reward currency type."
+        },
+        "pointValueInCurrency": {
+          "type": "number",
+          "description": "Value of 1 reward point in currency units."
+        },
+        "aiFetched": {
+          "type": "boolean",
+          "description": "Whether benefits and offers were populated or refreshed using Gemini AI."
+        },
+        "aiSummary": {
+          "type": "string",
+          "description": "Concise AI or user summary of card features, milestones, lounge, fuel, and travel perks."
+        },
+        "aiLastUpdatedEpochMs": {
+          "type": "integer",
+          "description": "Epoch milliseconds when AI terms were last fetched."
+        },
+        "sampleData": {
+          "type": "boolean",
+          "description": "True if this card was created as part of first-launch sample data."
+        },
+        "rules": {
+          "type": "array",
+          "description": "Bounded list (max 30) of structured merchant offer and category reward rules with caps and conditions."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp written via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp written via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "issuer",
+        "cardName",
+        "network",
+        "lastFour",
+        "creditLimit",
+        "statementBalance",
+        "billingDay",
+        "dueDay",
+        "currencySymbol",
+        "cardTheme",
+        "baseRewardRatePercent",
+        "rewardType",
+        "pointValueInCurrency",
+        "aiFetched",
+        "aiSummary",
+        "aiLastUpdatedEpochMs",
+        "sampleData",
+        "rules",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PurchaseLog": {
+      "title": "PurchaseLog",
+      "description": "A logged purchase where the user selected a recommended credit card to track realized savings and monthly benefit cap usage.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID of the owner."
+        },
+        "cardId": {
+          "type": "string",
+          "description": "Document ID of the selected CreditCard."
+        },
+        "cardDisplayName": {
+          "type": "string",
+          "description": "Human-readable label of the card used."
+        },
+        "cardNetwork": {
+          "type": "string",
+          "description": "Network of the card used."
+        },
+        "merchantName": {
+          "type": "string",
+          "description": "Merchant or store name for the purchase."
+        },
+        "itemNote": {
+          "type": "string",
+          "description": "Optional note describing the purchase."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["SHOPPING", "GROCERIES", "DINING", "TRAVEL", "UTILITIES", "FUEL", "ENTERTAINMENT", "ALL"],
+          "description": "Spend category."
+        },
+        "paymentMode": {
+          "type": "string",
+          "enum": ["ONLINE", "PORTAL", "EMI", "IN_STORE"],
+          "description": "Payment checkout channel."
+        },
+        "amount": {
+          "type": "number",
+          "description": "Purchase amount in currency."
+        },
+        "currencySymbol": {
+          "type": "string",
+          "description": "Currency symbol."
+        },
+        "matchedRuleId": {
+          "type": "string",
+          "description": "Rule ID from the card matched for cap tracking."
+        },
+        "matchedRuleTitle": {
+          "type": "string",
+          "description": "Matched offer or reward rule title."
+        },
+        "expectedBenefitAmount": {
+          "type": "number",
+          "description": "Calculated expected discount/cashback/reward value."
+        },
+        "effectiveReturnPercent": {
+          "type": "number",
+          "description": "Effective return percentage on this transaction."
+        },
+        "billingCycleKey": {
+          "type": "string",
+          "description": "Cycle key such as YYYY-MM used to aggregate monthly cap consumption."
+        },
+        "sampleData": {
+          "type": "boolean",
+          "description": "True if this log was created as first-launch sample data."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp written via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp written via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "cardId",
+        "cardDisplayName",
+        "cardNetwork",
+        "merchantName",
+        "itemNote",
+        "category",
+        "paymentMode",
+        "amount",
+        "currencySymbol",
+        "matchedRuleId",
+        "matchedRuleTitle",
+        "expectedBenefitAmount",
+        "effectiveReturnPercent",
+        "billingCycleKey",
+        "sampleData",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "UserMeta": {
+      "title": "UserMeta",
+      "description": "Per-user wallet onboarding and currency settings.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Authenticated Firebase UID."
+        },
+        "sampleSeeded": {
+          "type": "boolean",
+          "description": "Whether initial sample cards and transactions have been seeded once."
+        },
+        "preferredCurrency": {
+          "type": "string",
+          "description": "Default currency symbol for the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp written via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp written via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": [
+        "userId",
+        "sampleSeeded",
+        "preferredCurrency",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/cards/{cardId}": {
+      "schema": { "$ref": "#/entities/CreditCard" },
+      "description": "User's saved credit cards and structured AI/manual benefit rules."
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/PurchaseLog" },
+      "description": "User's logged purchases and tracked savings/benefit cap consumption."
+    },
+    "/users/{userId}/meta/{metaId}": {
+      "schema": { "$ref": "#/entities/UserMeta" },
+      "description": "User onboarding and wallet configuration metadata."
+    }
+  }
+}

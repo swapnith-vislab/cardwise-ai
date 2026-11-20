@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">CardWise AI</string>
+    <string name="nav_advisor">Advisor</string>
+    <string name="nav_my_cards">My Cards</string>
+    <string name="nav_activity">Activity</string>
+    <string name="ai_verify_disclaimer">Verify on official bank site before spending</string>
+    <string name="privacy_last_four_notice">Last 4 digits only. Never enter full card numbers, CVV, or PINs.</string>
+</resources>
